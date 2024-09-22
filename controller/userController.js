@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const User = require('../model/userModal'); 
+const Article = require('../model/articleModel')
 const jwt = require('jsonwebtoken')
 
 const registerUser = async (req, res) => {
@@ -67,9 +68,123 @@ const loginUser = async (req, res) => {
     }
   };
 
+  const createArticle = async(req,res)=>{
+    console.log(req.body);
+    console.log(req.user.userId,"//////////id ");
+    const { title, description, images, tags, category } = req.body;
+
+    try {
+
+        console.log(  title,
+            description,
+            images,
+            tags,
+            category,
+             req.user.userId,"//////////////heheh");
+
+        // Create the article
+        const newArticle = new Article({
+            title,
+            description,
+            images,
+            tags,
+            category,
+            author: req.user.userId,  // Assuming you have authentication middleware to get user
+        });
+
+        
+
+        const savedArticle = await newArticle.save();
+        res.status(201).json(savedArticle);  // Send the newly created article in response
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Server error' });
+    }
+    
+  }
+
+  const getArticles = async(req,res)=>{
+    try {
+        console.log("haiaai");
+        
+        const articles = await Article.find(); // Fetch all articles
+        console.log(articles,"articlesssss");
+        
+        res.status(200).json(articles);
+    } catch (error) {
+        console.error("Error fetching articles:", error);
+        res.status(500).json({ message: 'Failed to fetch articles' });
+    }
+  }
+
+  const getArticleDetails = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Find the article by ID
+        const article = await Article.findById(id);
+        
+        // Check if the article exists
+        if (!article) {
+            return res.status(404).json({ message: 'Article not found' });
+        }
+
+        // Return the article details
+        return res.status(200).json(article);
+    } catch (error) {
+        console.error("Error fetching article:", error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+
+const handleReaction = async (req, res) => {
+    const { id } = req.params; // Article ID from URL
+    const { reaction } = req.body; // Reaction should be 'like' or 'dislike'
+    const userId = req.user.userId; // Assuming you have user authentication
+
+    try {
+        const article = await Article.findById(id);
+        if (!article) {
+            return res.status(404).json({ message: 'Article not found' });
+        }
+
+        if (reaction === 'like') {
+            // Remove from dislikes if exists
+            article.dislikes = article.dislikes.filter(user => user.toString() !== userId);
+            // Add user to likes if not already liked
+            if (!article.likes.includes(userId)) {
+                article.likes.push(userId);
+            }
+        } else if (reaction === 'dislike') {
+            // Remove from likes if exists
+            article.likes = article.likes.filter(user => user.toString() !== userId);
+            // Add user to dislikes if not already disliked
+            if (!article.dislikes.includes(userId)) {
+                article.dislikes.push(userId);
+            }
+        }
+
+        await article.save();
+        
+        // Return the counts of likes and dislikes
+        res.status(200).json({ 
+            likes: article.likes.length, 
+            dislikes: article.dislikes.length 
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    createArticle,
+    getArticles,
+    getArticleDetails,
+    handleReaction
 };
 
 
