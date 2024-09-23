@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true },
   dob: { type: Date, required: true }, // Date of Birth
   password: { type: String, required: true },
+  preferences: { type: [String], default: [] },
 });
 
 const User = mongoose.model('User', userSchema);

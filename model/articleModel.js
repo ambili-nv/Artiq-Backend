@@ -49,7 +49,6 @@ const articleSchema = new mongoose.Schema({
     tags: [String],     // Array of tags
     category: {
         type: String,
-        enum: ['sports', 'politics', 'space'],  // Add categories here
         required: true,
     },
     author: {
